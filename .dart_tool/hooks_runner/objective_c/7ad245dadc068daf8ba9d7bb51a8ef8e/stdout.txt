@@ -1,0 +1,49 @@
+Running `(cd /Users/picaso/.pub-cache/hosted/pub.dev/objective_c-9.4.1/; ANDROID_HOME=/Users/picaso/Library/Android/sdk TMPDIR=/var/folders/zn/b7__8vlj4sb8rywllnc6h8b40000gn/T/ PATH=/Users/picaso/Library/Application Support/cloud-code/installer/google-cloud-sdk/bin:/Users/picaso/.shorebird/bin:/opt/homebrew/opt/llvm/bin:/opt/homebrew/opt/llvm/bin:/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin:/Users/picaso/.sdkman/candidates/java/current/bin:/Users/picaso/.rbenv/shims:/Users/picaso/.rbenv/bin:/Users/picaso/Library/Android/sdk/platform-tools:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Applications/Little Snitch.app/Contents/Components:/Users/picaso/Applications/iTerm.app/Contents/Resources/utilities:/Users/picaso/Library/Application Support/JetBrains/Toolbox/scripts:/Users/picaso/.pub-cache/bin:/Users/picaso/.local/bin:/Users/picaso/.pulumi/bin:/Users/picaso/google-cloud-sdk/bin HOME=/Users/picaso /opt/homebrew/Caskroom/flutter/3.29.0/flutter/bin/cache/dart-sdk/bin/dart --packages=/Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/package_config.json /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/objective_c/7ad245dadc068daf8ba9d7bb51a8ef8e/hook.dill --config=/Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/objective_c/7ad245dadc068daf8ba9d7bb51a8ef8e/input.json )`.
+INFO: 2026-07-13 09:23:08.042736: Using compiler /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang from BuildInput.cCompiler.cc.
+
+INFO: 2026-07-13 09:23:08.047853: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -c /Users/picaso/.pub-cache/hosted/pub.dev/objective_c-9.4.1/src/include/dart_api_dl.c -fpic -gline-tables-only -I src -o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/include/dart_api_dl.c.o
+
+INFO: 2026-07-13 09:23:08.049595: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -c /Users/picaso/.pub-cache/hosted/pub.dev/objective_c-9.4.1/src/objective_c.c -fpic -gline-tables-only -I src -o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.c.o
+
+INFO: 2026-07-13 09:23:08.049881: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/picaso/.pub-cache/hosted/pub.dev/objective_c-9.4.1/src/input_stream_adapter.m -fpic -gline-tables-only -I src -o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/input_stream_adapter.m.o
+
+INFO: 2026-07-13 09:23:08.050055: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/picaso/.pub-cache/hosted/pub.dev/objective_c-9.4.1/src/objective_c.m -fpic -gline-tables-only -I src -o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.m.o
+
+INFO: 2026-07-13 09:23:08.050216: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/picaso/.pub-cache/hosted/pub.dev/objective_c-9.4.1/src/observer.m -fpic -gline-tables-only -I src -o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/observer.m.o
+
+INFO: 2026-07-13 09:23:08.050376: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/picaso/.pub-cache/hosted/pub.dev/objective_c-9.4.1/src/ns_number.m -fpic -gline-tables-only -I src -o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/ns_number.m.o
+
+INFO: 2026-07-13 09:23:08.050539: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/picaso/.pub-cache/hosted/pub.dev/objective_c-9.4.1/src/protocol.m -fpic -gline-tables-only -I src -o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/protocol.m.o
+
+INFO: 2026-07-13 09:23:08.050697: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/picaso/.pub-cache/hosted/pub.dev/objective_c-9.4.1/src/objective_c_bindings_generated.m -fpic -gline-tables-only -I src -o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c_bindings_generated.m.o
+
+INFO: 2026-07-13 09:23:08.401598: 
+INFO: 2026-07-13 09:23:08.401616: 
+INFO: 2026-07-13 09:23:08.401631: Generated /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/include/dart_api_dl.c.o
+
+INFO: 2026-07-13 09:23:08.402258: 
+INFO: 2026-07-13 09:23:08.402278: 
+INFO: 2026-07-13 09:23:08.402293: Generated /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/protocol.m.o
+
+INFO: 2026-07-13 09:23:08.735670: 
+INFO: 2026-07-13 09:23:08.735739: 
+INFO: 2026-07-13 09:23:08.735758: Generated /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/ns_number.m.o
+
+INFO: 2026-07-13 09:23:08.747255: 
+INFO: 2026-07-13 09:23:08.747306: 
+INFO: 2026-07-13 09:23:08.747324: Generated /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.m.o
+
+INFO: 2026-07-13 09:23:08.747682: 
+INFO: 2026-07-13 09:23:08.747709: 
+INFO: 2026-07-13 09:23:08.747724: Generated /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/input_stream_adapter.m.o
+
+INFO: 2026-07-13 09:23:08.772667: 
+INFO: 2026-07-13 09:23:08.772702: 
+INFO: 2026-07-13 09:23:08.772719: Generated /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c_bindings_generated.m.o
+
+INFO: 2026-07-13 09:23:08.773136: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -shared -Wl,-encryptable -undefined dynamic_lookup -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-darwin -mmacos-version-min=13 /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/include/dart_api_dl.c.o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.c.o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/input_stream_adapter.m.o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.m.o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/observer.m.o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/ns_number.m.o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/protocol.m.o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c_bindings_generated.m.o -o /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/objective_c.dylib
+
+INFO: 2026-07-13 09:23:08.922149: 
+INFO: 2026-07-13 09:23:08.922379: 
+INFO: 2026-07-13 09:23:08.922400: Generated /Users/picaso/Dev/Work/Westminister/notif/sdks/flutter/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/objective_c.dylib
+
