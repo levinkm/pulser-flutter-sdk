@@ -1,7 +1,8 @@
 name: pulser_sdk
 description: Secure multi-channel notification SDK. Push, inbox, in-app, events, preferences.
 version: 1.0.0
-repository: https://github.com/levinkm/notif-flutter-sdk
+repository: https://github.com/levinkm/pulser-flutter-sdk
+homepage: https://github.com/levinkm/pulser-flutter-sdk
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -16,7 +17,6 @@ dependencies:
   crypto: ^3.0.0
   connectivity_plus: ^6.1.5
   google_api_availability: ^5.0.1
-  flutter_apns_only: ^1.6.0
 
 dev_dependencies:
   flutter_test:
