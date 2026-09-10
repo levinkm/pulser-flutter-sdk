@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 class ApnsTokenService {
   static const _channel = MethodChannel('pulser_sdk/apns');
 
-  final void Function(String token) onToken;
+  final void Function(String token, String env) onToken;
   final void Function(String notifId)? onDelivery;
 
   ApnsTokenService({required this.onToken, this.onDelivery});
@@ -17,8 +17,10 @@ class ApnsTokenService {
     _channel.setMethodCallHandler((call) async {
       switch (call.method) {
         case 'onToken':
-          final token = call.arguments as String?;
-          if (token != null && token.isNotEmpty) onToken(token);
+          final args = call.arguments as Map?;
+          final token = args?['token'] as String?;
+          final env = args?['env'] as String? ?? 'production';
+          if (token != null && token.isNotEmpty) onToken(token, env);
         case 'onDelivery':
           final notifId = call.arguments as String?;
           if (notifId != null && notifId.isNotEmpty) onDelivery?.call(notifId);

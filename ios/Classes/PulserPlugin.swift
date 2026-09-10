@@ -32,7 +32,8 @@ public class PulserPlugin: NSObject, FlutterPlugin {
     public func application(_ application: UIApplication,
                             didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         let token = deviceToken.map { String(format: "%02x", $0) }.joined()
-        PulserPlugin.channel?.invokeMethod("onToken", arguments: token)
+        let env = apnsEnvironment()
+        PulserPlugin.channel?.invokeMethod("onToken", arguments: ["token": token, "env": env])
     }
 
     public func application(_ application: UIApplication,
@@ -63,5 +64,23 @@ public class PulserPlugin: NSObject, FlutterPlugin {
                 UIApplication.shared.registerForRemoteNotifications()
             }
         }
+    }
+
+    /// Detects APNs environment from the embedded provisioning profile.
+    /// Returns "production" for App Store/TestFlight, "sandbox" for debug/dev builds.
+    private func apnsEnvironment() -> String {
+        #if targetEnvironment(simulator)
+        return "sandbox"
+        #else
+        guard
+            let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
+            let data = try? Data(contentsOf: url),
+            let str = String(data: data, encoding: .ascii)
+        else {
+            // No provisioning profile — likely App Store build, use production
+            return "production"
+        }
+        return str.contains("aps-environment") && str.contains("development") ? "sandbox" : "production"
+        #endif
     }
 }

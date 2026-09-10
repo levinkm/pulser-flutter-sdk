@@ -197,15 +197,12 @@ class Pulser {
   Future<void> initAPNs() async {
     if (!Platform.isIOS) return;
     _apnsService = ApnsTokenService(
-      onToken: (apnsToken) async {
+      onToken: (apnsToken, env) async {
         final userId = await _store.userId;
         if (_identified && userId != null) {
-          // Rotation: register new token alongside the stored FCM token so the
-          // backend always has both and can fall back to FCM if APNs fails.
           final fcmToken = await _store.fcmToken;
-          await _registerDevice(userId: userId, pushToken: fcmToken, apnsToken: apnsToken);
+          await _registerDevice(userId: userId, pushToken: fcmToken, apnsToken: apnsToken, apnsEnv: env);
         } else {
-          // Not yet identified — store for consume on next identify()
           await _store.setPendingAPNsToken(apnsToken);
         }
       },
@@ -244,15 +241,15 @@ class Pulser {
     required String userId,
     String? pushToken,
     String? apnsToken,
+    String? apnsEnv,
     String? username,
     Map<String, String>? deviceInfo,
   }) async {
     if ((pushToken == null || pushToken.isEmpty) &&
         (apnsToken == null || apnsToken.isEmpty)) {
-      return; // no token yet — will arrive via callback
+      return;
     }
 
-    // Persist FCM token so APNs rotation can pair both tokens together
     if (pushToken != null && pushToken.isNotEmpty) {
       await _store.setFCMToken(pushToken);
     }
@@ -264,6 +261,7 @@ class Pulser {
       'platform': _detectPlatform(),
       if (pushToken != null && pushToken.isNotEmpty) 'token': pushToken,
       if (apnsToken != null && apnsToken.isNotEmpty) 'apns_token': apnsToken,
+      if (apnsEnv != null && apnsEnv.isNotEmpty) 'apns_env': apnsEnv,
       if (fcmAvailable != null) 'fcm_available': fcmAvailable,
       if (username != null) 'username': username,
       ...?deviceInfo,
