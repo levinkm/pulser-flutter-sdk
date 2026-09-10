@@ -24,6 +24,7 @@ flutter:
       ios:
         classPrefix: Pulser
         pluginClass: PulserPlugin
+        sharedDarwinSource: false
 
 dev_dependencies:
   flutter_test:
