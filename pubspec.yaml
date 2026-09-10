@@ -18,6 +18,13 @@ dependencies:
   connectivity_plus: ^6.1.5
   google_api_availability: ^5.0.1
 
+flutter:
+  plugin:
+    platforms:
+      ios:
+        classPrefix: Pulser
+        pluginClass: PulserPlugin
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

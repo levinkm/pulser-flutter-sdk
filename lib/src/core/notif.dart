@@ -200,9 +200,10 @@ class Pulser {
       onToken: (apnsToken) async {
         final userId = await _store.userId;
         if (_identified && userId != null) {
-          // Rotation: register new token. The upsert on the backend replaces
-          // the old apns_token on the same (user, app, platform) row atomically.
-          await _registerDevice(userId: userId, apnsToken: apnsToken);
+          // Rotation: register new token alongside the stored FCM token so the
+          // backend always has both and can fall back to FCM if APNs fails.
+          final fcmToken = await _store.fcmToken;
+          await _registerDevice(userId: userId, pushToken: fcmToken, apnsToken: apnsToken);
         } else {
           // Not yet identified — store for consume on next identify()
           await _store.setPendingAPNsToken(apnsToken);
@@ -249,6 +250,11 @@ class Pulser {
     if ((pushToken == null || pushToken.isEmpty) &&
         (apnsToken == null || apnsToken.isEmpty)) {
       return; // no token yet — will arrive via callback
+    }
+
+    // Persist FCM token so APNs rotation can pair both tokens together
+    if (pushToken != null && pushToken.isNotEmpty) {
+      await _store.setFCMToken(pushToken);
     }
 
     final fcmAvailable = await checkFCMAvailability();

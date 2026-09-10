@@ -45,6 +45,8 @@ class _HomePageState extends State<HomePage> {
       ),
     );
 
+    _initPush();
+
     _pulser.onConnectionChange = (connected) {
       setState(() => _connected = connected);
       _addLog(
@@ -102,9 +104,26 @@ class _HomePageState extends State<HomePage> {
     setState(() => _log.insert(0, '[${TimeOfDay.now().format(context)}] $msg'));
   }
 
+  Future<void> _initPush() async {
+    // iOS: init APNs — token arrives via native plugin callback
+    await _pulser.initAPNs();
+    _addLog('🔔 APNs init requested — waiting for token...');
+
+    // Android: get FCM token
+    final fcmToken = await FirebaseMessaging.instance.getToken();
+    if (fcmToken != null) {
+      _addLog('🔑 FCM token: ${fcmToken.substring(0, 20)}...');
+    }
+  }
+
   Future<void> _identify() async {
     try {
-      await _pulser.identify(userId: 'user_demo_001', username: 'Demo User');
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      await _pulser.identify(
+        userId: 'user_demo_001',
+        username: 'Demo User',
+        pushToken: fcmToken,
+      );
       _addLog('✅ Identified as user_demo_001');
     } catch (e) {
       _addLog('❌ identify failed: $e');
@@ -139,6 +158,14 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       _addLog('❌ inapp evaluate failed: $e');
     }
+  }
+
+  Future<void> _showTokens() async {
+    final fcmToken = await FirebaseMessaging.instance.getToken();
+    final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+    _addLog('--- Token Debug ---');
+    _addLog('FCM : ${fcmToken ?? 'null'}');
+    _addLog('APNs: ${apnsToken ?? 'null (Android or not yet granted)'}');
   }
 
   Future<void> _logout() async {
@@ -226,6 +253,9 @@ class _HomePageState extends State<HomePage> {
                 ElevatedButton(
                     onPressed: _evaluateInApp,
                     child: const Text('Eval In-App')),
+                ElevatedButton(
+                    onPressed: _showTokens,
+                    child: const Text('Show Tokens')),
                 OutlinedButton(onPressed: _logout, child: const Text('Logout')),
               ],
             ),

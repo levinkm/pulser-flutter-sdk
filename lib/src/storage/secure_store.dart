@@ -10,6 +10,7 @@ class SecureStore {
   static const _keyPendingDeliveries = 'notif_pending_deliveries';
   static const _keyAnonymousId = 'notif_anonymous_id';
   static const _keyPendingAPNsToken = 'notif_pending_apns_token';
+  static const _keyFCMToken = 'notif_fcm_token';
 
   final FlutterSecureStorage _storage;
 
@@ -69,6 +70,10 @@ class SecureStore {
   Future<String?> get pendingAPNsToken => _storage.read(key: _keyPendingAPNsToken);
   Future<void> setPendingAPNsToken(String token) => _storage.write(key: _keyPendingAPNsToken, value: token);
   Future<void> clearPendingAPNsToken() => _storage.delete(key: _keyPendingAPNsToken);
+
+  /// FCM push token — persisted so it can be paired with APNs token on rotation.
+  Future<String?> get fcmToken => _storage.read(key: _keyFCMToken);
+  Future<void> setFCMToken(String token) => _storage.write(key: _keyFCMToken, value: token);
 
   /// Wipe all credentials (on logout).
   Future<void> clear() async {
