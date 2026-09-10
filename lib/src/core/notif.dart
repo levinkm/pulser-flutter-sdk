@@ -245,11 +245,6 @@ class Pulser {
     String? username,
     Map<String, String>? deviceInfo,
   }) async {
-    if ((pushToken == null || pushToken.isEmpty) &&
-        (apnsToken == null || apnsToken.isEmpty)) {
-      return;
-    }
-
     if (pushToken != null && pushToken.isNotEmpty) {
       await _store.setFCMToken(pushToken);
     }
