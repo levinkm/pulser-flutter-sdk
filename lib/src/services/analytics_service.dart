@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -16,7 +17,10 @@ import 'event_service.dart';
 /// ```
 class AnalyticsService {
   final EventService _events;
-  Map<String, dynamic>? _deviceContext;
+
+  // Completer ensures concurrent calls share one device info fetch instead of
+  // each launching their own lookup before the first one completes.
+  Completer<Map<String, dynamic>>? _contextCompleter;
 
   AnalyticsService({required EventService events}) : _events = events;
 
@@ -46,7 +50,8 @@ class AnalyticsService {
 
   Future<void> trackLogout({int? sessionDurationSeconds}) async {
     await _events.track('logout', properties: {
-      if (sessionDurationSeconds != null) 'session_duration_seconds': sessionDurationSeconds,
+      if (sessionDurationSeconds != null)
+        'session_duration_seconds': sessionDurationSeconds,
     });
   }
 
@@ -68,8 +73,11 @@ class AnalyticsService {
     await _events.track('register_start', properties: {'referrer': referrer});
   }
 
-  Future<void> trackRegisterStep(String step, {int? timeOnStepSeconds, int? attempts}) async {
-    // step: 'email' | 'phone' | 'otp' | 'profile' | 'kyc'
+  Future<void> trackRegisterStep(
+    String step, {
+    int? timeOnStepSeconds,
+    int? attempts,
+  }) async {
     await _events.track('register_step_$step', properties: {
       if (timeOnStepSeconds != null) 'time_on_step_seconds': timeOnStepSeconds,
       if (attempts != null) 'attempts': attempts,
@@ -82,7 +90,8 @@ class AnalyticsService {
     String? referrer,
   }) async {
     await _events.track('register_complete', properties: {
-      if (timeToCompleteSeconds != null) 'time_to_complete_seconds': timeToCompleteSeconds,
+      if (timeToCompleteSeconds != null)
+        'time_to_complete_seconds': timeToCompleteSeconds,
       if (stepsCount != null) 'steps_count': stepsCount,
       if (referrer != null) 'referrer': referrer,
     });
@@ -118,7 +127,8 @@ class AnalyticsService {
   }) async {
     await _events.track('screen_exit', properties: {
       'screen': screen,
-      if (timeOnScreenSeconds != null) 'time_on_screen_seconds': timeOnScreenSeconds,
+      if (timeOnScreenSeconds != null)
+        'time_on_screen_seconds': timeOnScreenSeconds,
     });
   }
 
@@ -169,10 +179,23 @@ class AnalyticsService {
   // ── Device context ────────────────────────────────────────────────────────
 
   /// Returns cached device context (platform, os_version, app_version).
-  /// Fetched once per session.
-  Future<Map<String, dynamic>> _context() async {
-    if (_deviceContext != null) return _deviceContext!;
+  /// Uses a Completer so concurrent calls share one fetch instead of racing.
+  Future<Map<String, dynamic>> _context() {
+    if (_contextCompleter != null) return _contextCompleter!.future;
 
+    _contextCompleter = Completer<Map<String, dynamic>>();
+
+    _fetchContext().then((ctx) {
+      _contextCompleter!.complete(ctx);
+    }).catchError((e) {
+      // Complete with empty map on error so callers are never blocked
+      _contextCompleter!.complete(<String, dynamic>{});
+    });
+
+    return _contextCompleter!.future;
+  }
+
+  Future<Map<String, dynamic>> _fetchContext() async {
     final ctx = <String, dynamic>{
       'platform': Platform.isIOS ? 'ios' : 'android',
     };
@@ -193,7 +216,6 @@ class AnalyticsService {
       }
     } catch (_) {}
 
-    _deviceContext = ctx;
     return ctx;
   }
 }

@@ -1,8 +1,14 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:uuid/uuid.dart';
 
-/// Encrypted credential storage.
-/// iOS: Keychain. Android: EncryptedSharedPreferences. Web: n/a (in-memory).
+/// Encrypted credential storage — singleton so all services share one instance.
+/// iOS: Keychain. Android: EncryptedSharedPreferences.
 class SecureStore {
+  static final SecureStore _instance = SecureStore._internal();
+  factory SecureStore() => _instance;
+  SecureStore._internal();
+
+  static const _uuid = Uuid();
   static const _keyDeviceToken = 'notif_device_token';
   static const _keyDeviceId = 'notif_device_id';
   static const _keyLastSeq = 'notif_last_seq';
@@ -55,7 +61,7 @@ class SecureStore {
   Future<String> get anonymousId async {
     var id = await _storage.read(key: _keyAnonymousId);
     if (id == null) {
-      id = 'anon_${DateTime.now().millisecondsSinceEpoch}';
+      id = 'anon_${_uuid.v4()}';
       await _storage.write(key: _keyAnonymousId, value: id);
     }
     return id;
