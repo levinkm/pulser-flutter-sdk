@@ -20,6 +20,7 @@ export 'src/models/inapp_message.dart';
 export 'src/models/preferences.dart';
 export 'src/services/inbox_service.dart';
 export 'src/services/event_service.dart';
+export 'src/services/analytics_service.dart';
 export 'src/services/preference_service.dart';
 export 'src/services/inapp_service.dart';
 export 'src/services/notification_tracker.dart';

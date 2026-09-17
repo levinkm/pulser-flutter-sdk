@@ -5,6 +5,7 @@ import '../models/inbox_item.dart';
 import '../models/inapp_message.dart';
 import '../network/api_client.dart';
 import '../network/ws_manager.dart';
+import '../services/analytics_service.dart';
 import '../services/apns_token_service.dart';
 import '../services/consent_service.dart';
 import '../services/event_service.dart';
@@ -39,6 +40,7 @@ class Pulser {
   final ApiClient _api;
   late final InboxService inbox;
   late final EventService events;
+  late final AnalyticsService analytics;
   late final PreferenceService preferences;
   late final InAppService inApp;
   late final NotificationTracker notifications;
@@ -85,9 +87,10 @@ class Pulser {
     final platform = _detectPlatform();
     inbox = InboxService(api: _api, store: _store);
     events = EventService(api: _api, sessionId: _sessionId);
+    analytics = AnalyticsService(events: events);
     preferences = PreferenceService(api: _api);
     inApp = InAppService(api: _api, sessionId: _sessionId, platform: platform);
-    notifications = NotificationTracker(api: _api);
+    notifications = NotificationTracker(api: _api, events: events);
     users = UserService(api: _api);
     consent = ConsentService(api: _api);
   }
