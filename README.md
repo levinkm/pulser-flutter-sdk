@@ -1,6 +1,6 @@
 # Pulser SDK for Flutter
 
-Multi-channel notification SDK for Flutter. Supports push notifications, persistent inbox, in-app messages, event tracking, delivery/open tracking (CTR), and user preferences — with real-time WebSocket delivery and automatic reconnection.
+Multi-channel notification SDK for Flutter. Supports push notifications (FCM + APNs direct), persistent inbox, in-app messages, event tracking, analytics instrumentation, delivery/open/dismiss tracking, and user preferences — with real-time WebSocket delivery and automatic reconnection.
 
 ---
 
@@ -12,14 +12,17 @@ Multi-channel notification SDK for Flutter. Supports push notifications, persist
 - [iOS Setup](#ios-setup)
 - [Initialization](#initialization)
 - [Identify a User](#identify-a-user)
+- [Anonymous Identity & Alias](#anonymous-identity--alias)
 - [Push Notifications](#push-notifications)
+- [APNs Direct (iOS)](#apns-direct-ios)
 - [Notification Inbox](#notification-inbox)
 - [Real-Time (WebSocket)](#real-time-websocket)
 - [In-App Messages](#in-app-messages)
-- [Event Tracking](#event-tracking)
+- [Analytics Event Tracking](#analytics-event-tracking)
+- [Raw Event Tracking](#raw-event-tracking)
 - [User Preferences](#user-preferences)
 - [Consent Management](#consent-management)
-- [Delivery & Open Tracking (CTR)](#delivery--open-tracking-ctr)
+- [Delivery, Open & Dismiss Tracking](#delivery-open--dismiss-tracking)
 - [Logout](#logout)
 - [API Reference](#api-reference)
 - [Error Handling](#error-handling)
@@ -35,29 +38,29 @@ Multi-channel notification SDK for Flutter. Supports push notifications, persist
 | Android | API 21 (Android 5.0) |
 | iOS | 13.0 |
 
-The SDK requires **Firebase Cloud Messaging (FCM)** for push delivery. Make sure your project has Firebase set up before integrating.
+The SDK requires **Firebase Cloud Messaging (FCM)** for push delivery on Android. On iOS, FCM is used as a fallback — the server prefers direct APNs when credentials are configured.
 
 ---
 
 ## Installation
 
-### Option A — Local path (monorepo)
+### Option A — Git
 
 ```yaml
 # pubspec.yaml
 dependencies:
   pulser_sdk:
-    path: ../path/to/sdks/flutter
+    git:
+      url: https://github.com/levinkm/pulser-flutter-sdk.git
+      ref: main
 ```
 
-### Option B — Git
+### Option B — Local path (monorepo)
 
 ```yaml
 dependencies:
   pulser_sdk:
-    git:
-      url: https://github.com/levinkm/notif-flutter-sdk
-      ref: main
+    path: ../path/to/sdks/flutter
 ```
 
 Then run:
@@ -70,24 +73,7 @@ flutter pub get
 
 ## Android Setup
 
-### 1. Enable core library desugaring
-
-Required by `flutter_local_notifications` (used for foreground notification display).
-
-```kotlin
-// android/app/build.gradle.kts
-android {
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
-    }
-}
-
-dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-}
-```
-
-### 2. Set default notification channel
+### 1. Set default notification channel
 
 ```xml
 <!-- android/app/src/main/AndroidManifest.xml -->
@@ -101,18 +87,20 @@ dependencies {
 </application>
 ```
 
-### 3. Add internet permission
+### 2. Add internet permission
 
 ```xml
 <uses-permission android:name="android.permission.INTERNET" />
 ```
 
-### 4. Emulator base URL
+### 3. Emulator base URL
 
 When running on an Android emulator, use `10.0.2.2` instead of `localhost` to reach your host machine:
 
 ```dart
-final baseURL = Platform.isAndroid ? 'http://10.0.2.2:9090' : 'http://localhost:9090';
+final baseURL = Platform.isAndroid
+    ? 'http://10.0.2.2:8080'
+    : 'http://localhost:8080';
 ```
 
 ---
@@ -149,7 +137,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:pulser_sdk/notif_sdk.dart';
 
-// Background FCM handler — must be top-level
+// Background FCM handler — must be a top-level function
 @pragma('vm:entry-point')
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
   await NotificationTracker.persistBackgroundDelivery(message.data);
@@ -158,10 +146,10 @@ Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Initialize Firebase FIRST
+  // 1. Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // 2. Register background handler early
+  // 2. Register background handler
   FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
 
   // 3. Create Pulser instance
@@ -170,11 +158,13 @@ Future<void> main() async {
       baseURL: 'https://your-pulser-server.com',
       apiKey: 'pk_your_api_key_here',
       appId: 'your-app-id-here',
-      debug: false,
     ),
   );
 
-  // 4. Wire foreground FCM messages
+  // 4. (iOS only) Init APNs token handling before identify()
+  await pulser.initAPNs();
+
+  // 5. Wire foreground FCM messages
   FirebaseMessaging.onMessage.listen((message) {
     final title = message.data['title'] ?? message.notification?.title ?? '';
     final body  = message.data['body']  ?? message.notification?.body  ?? '';
@@ -194,13 +184,16 @@ Call `identify()` after login, once you have the FCM token. This registers the d
 ```dart
 Future<void> onUserLoggedIn(String userId) async {
   final fcmToken = await FirebaseMessaging.instance.getToken();
-  if (fcmToken == null) return;
 
   await pulser.identify(
     userId: userId,
     pushToken: fcmToken,
-    username: 'Jane Doe',       // optional
+    email: 'user@example.com',   // optional — enables email channel
+    username: 'Jane Doe',        // optional
   );
+
+  // Track login event with analytics context
+  await pulser.analytics.trackLogin(method: 'email');
 }
 ```
 
@@ -214,23 +207,35 @@ FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
 
 ---
 
+## Anonymous Identity & Alias
+
+The SDK auto-generates an anonymous ID on first launch. When the user logs in, alias it to their identified user ID so pre-login events are attributed correctly:
+
+```dart
+// Call alias BEFORE or alongside identify()
+await pulser.alias(userId);
+await pulser.identify(userId: userId, pushToken: fcmToken);
+```
+
+Check if an anonymous session exists:
+
+```dart
+if (await pulser.hasAnonymousSession) {
+  await pulser.alias(userId);
+}
+```
+
+---
+
 ## Push Notifications
 
 ### Foreground notifications
 
-Android suppresses the system tray when the app is in the foreground and the FCM payload has a `notification` block. Use `flutter_local_notifications` to show them manually.
-
-The SDK calls your `onForegroundMessage` handler automatically when `handleForegroundMessage` is called:
+The SDK calls your `onForegroundMessage` handler when a message arrives while the app is open:
 
 ```dart
 pulser.onForegroundMessage = (title, body, notificationId) {
-  // Show a local notification using flutter_local_notifications
-  flutterLocalNotifications.show(
-    0,
-    title,
-    body,
-    notificationDetails,
-  );
+  // Show a local notification or in-app banner
 };
 ```
 
@@ -243,6 +248,11 @@ FirebaseMessaging.onMessageOpenedApp.listen((message) {
   if (id != null) {
     pulser.notifications.markDelivered(id);
     pulser.notifications.markOpened(id);
+    // Track tap for analytics
+    pulser.analytics.trackNotificationTapped(
+      notificationId: id,
+      channel: 'push',
+    );
   }
 });
 
@@ -259,14 +269,31 @@ if (initial != null) {
 
 ### Background delivery tracking
 
-The top-level background handler persists delivery IDs to SharedPreferences. They are flushed automatically when `identify()` completes:
-
 ```dart
 @pragma('vm:entry-point')
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
   await NotificationTracker.persistBackgroundDelivery(message.data);
 }
 ```
+
+Delivery IDs are flushed automatically when `identify()` completes.
+
+---
+
+## APNs Direct (iOS)
+
+Call `initAPNs()` once before `identify()`. The SDK handles APNs token registration, rotation, and environment detection (sandbox vs production) automatically — no manual configuration required.
+
+```dart
+final pulser = Pulser(config: PulserConfig(...));
+
+// Must be called before identify()
+await pulser.initAPNs();
+
+await pulser.identify(userId: userId, pushToken: fcmToken);
+```
+
+If the APNs token arrives before `identify()` is called, it is stored and sent automatically on the next `identify()` call.
 
 ---
 
@@ -287,10 +314,8 @@ for (final item in resp.items) {
 ### Pagination
 
 ```dart
-// First page
 final page1 = await pulser.inbox.fetch(limit: 20);
 
-// Next page
 if (page1.hasMore) {
   final page2 = await pulser.inbox.fetch(limit: 20, cursor: page1.nextCursor);
 }
@@ -299,10 +324,7 @@ if (page1.hasMore) {
 ### Mark as read
 
 ```dart
-// Mark specific items
 await pulser.inbox.markRead([item.id]);
-
-// Mark all
 await pulser.inbox.markAllRead();
 ```
 
@@ -324,7 +346,7 @@ final count = await pulser.inbox.unreadCount();
 | `imageUrl` | `String?` | Optional image URL |
 | `isRead` | `bool` | Read state |
 | `actions` | `List<InboxAction>` | CTA buttons |
-| `createdAt` | `DateTime` | Creation timestamp (local time) |
+| `createdAt` | `DateTime` | Creation timestamp |
 
 ---
 
@@ -334,7 +356,6 @@ The SDK connects automatically after `identify()`. New inbox items are pushed in
 
 ```dart
 pulser.onNotification = (InboxItem item) {
-  // New notification arrived — update your UI
   setState(() => _inbox.insert(0, item));
 };
 
@@ -343,26 +364,19 @@ pulser.onConnectionChange = (bool connected) {
 };
 ```
 
-The WebSocket:
-- Reconnects automatically with exponential backoff (2s → 60s max)
-- Pauses when the app goes to background, resumes on foreground
-- Performs a gap-free sync on reconnect using sequence numbers
+The WebSocket reconnects automatically with exponential backoff, pauses in the background, and performs a gap-free sync on reconnect using sequence numbers.
 
 ---
 
 ## In-App Messages
 
-Evaluate and display in-app messages for a given screen or event trigger:
+Evaluate and display in-app messages for a given screen:
 
 ```dart
-// On screen load
 final messages = await pulser.inApp.evaluate(screen: 'home');
 
 for (final msg in messages) {
-  // Show the message in your UI
   showInAppBanner(msg);
-
-  // Record impression
   await pulser.inApp.recordImpression(msg.id);
 }
 ```
@@ -370,10 +384,7 @@ for (final msg in messages) {
 Record interactions:
 
 ```dart
-// User clicked a CTA
 await pulser.inApp.recordClick(msg.id, action.action);
-
-// User dismissed
 await pulser.inApp.recordDismissal(msg.id);
 ```
 
@@ -389,15 +400,112 @@ pulser.onInAppMessage = (List<InAppMessage> messages) {
 
 ---
 
-## Event Tracking
+## Analytics Event Tracking
 
-Track custom user events for segmentation and campaign triggers:
+The `analytics` service provides typed helpers for the full event taxonomy. Device context (`platform`, `os_version`, `app_version`) is automatically attached to every event — no manual enrichment needed.
+
+### Authentication
 
 ```dart
-// Simple event
-await pulser.events.track('button_tapped');
+// On login success
+await pulser.analytics.trackLogin(
+  method: 'email',       // 'email' | 'phone' | 'google' | 'apple'
+  country: 'GH',         // optional — GeoIP enrichment handles this server-side
+  timezone: 'Africa/Accra',
+);
 
-// With properties and tags
+await pulser.analytics.trackLoginFailed(reason: 'wrong_password');
+
+// On logout
+await pulser.analytics.trackLogout(sessionDurationSeconds: stopwatch.elapsed.inSeconds);
+```
+
+### Registration funnel
+
+```dart
+await pulser.analytics.trackRegisterStart(referrer: 'organic');
+
+// On each step
+await pulser.analytics.trackRegisterStep('email', timeOnStepSeconds: 12);
+await pulser.analytics.trackRegisterStep('phone', timeOnStepSeconds: 8);
+await pulser.analytics.trackRegisterStep('otp',   timeOnStepSeconds: 20, attempts: 2);
+await pulser.analytics.trackRegisterStep('profile', timeOnStepSeconds: 35);
+
+// On completion
+await pulser.analytics.trackRegisterComplete(
+  timeToCompleteSeconds: stopwatch.elapsed.inSeconds,
+  stepsCount: 4,
+  referrer: 'organic',
+);
+
+// On app background/close before completion
+AppLifecycleListener(
+  onPause: () {
+    if (_registrationStarted && !_registrationComplete) {
+      pulser.analytics.trackRegisterAbandoned(
+        lastStep: _lastStep,
+        timeSpentSeconds: _stopwatch.elapsed.inSeconds,
+      );
+    }
+  },
+);
+```
+
+### Navigation
+
+```dart
+// On every screen transition
+await pulser.analytics.trackScreenView(
+  screen: 'wallet',
+  previousScreen: 'home',
+);
+
+await pulser.analytics.trackScreenExit(
+  screen: 'wallet',
+  timeOnScreenSeconds: _screenStopwatch.elapsed.inSeconds,
+);
+```
+
+### Engagement
+
+```dart
+await pulser.analytics.trackFeatureUsed(feature: 'send_money');
+
+await pulser.analytics.trackSearchPerformed(
+  queryLength: query.length,
+  resultsCount: results.length,
+);
+
+// Crash reporting
+await pulser.analytics.trackAppCrash(stackTraceHash: hash);
+```
+
+### Notification interactions
+
+```dart
+// User tapped a notification
+await pulser.analytics.trackNotificationTapped(
+  notificationId: id,
+  channel: 'push',
+  screenOpened: 'wallet',
+);
+
+// User dismissed a notification
+await pulser.analytics.trackNotificationDismissed(
+  notificationId: id,
+  channel: 'push',
+);
+```
+
+---
+
+## Raw Event Tracking
+
+For custom events not covered by the analytics helpers, use `events.track()` directly:
+
+```dart
+await pulser.events.track('custom_event_name');
+
 await pulser.events.track(
   'purchase_completed',
   properties: {
@@ -413,22 +521,14 @@ await pulser.events.track(
 
 ## User Preferences
 
-Fetch and update notification preferences:
-
 ```dart
-// Get current preferences
 final prefs = await pulser.preferences.get();
 
-// Update
-await pulser.preferences.update(
-  prefs.copyWith(emailEnabled: false),
-);
+await pulser.preferences.update(prefs.copyWith(emailEnabled: false));
 
-// Opt out of a channel
-await pulser.preferences.optOutChannel('sms');
+await pulser.preferences.optOutChannel('email');
 await pulser.preferences.optInChannel('push');
 
-// Opt out of a category
 await pulser.preferences.optOutCategory('marketing');
 await pulser.preferences.optInCategory('transactional');
 
@@ -440,20 +540,18 @@ await pulser.preferences.setQuietHours('22:00', '08:00');
 
 ## Consent Management
 
-The SDK provides a consent service for recording and checking user consent decisions per channel and purpose. Consent is always **channel + purpose** specific.
+Consent is always **channel + purpose** specific.
 
-### ConsentPurpose
+### ConsentPurpose values
 
 | Value | Description |
 |---|---|
-| `marketing` | Promotional emails, offers, newsletters, campaigns |
-| `transactional` | Receipts, OTPs, security alerts — always delivered, but good to record |
-| `product` | Feature announcements, onboarding tips, product updates |
-| `research` | Surveys, feedback requests, NPS |
+| `marketing` | Promotional messages, offers, campaigns |
+| `transactional` | Receipts, OTPs, security alerts |
+| `product` | Feature announcements, onboarding, product updates |
+| `research` | Surveys, feedback, NPS |
 
 ### Record consent at signup
-
-Pass consent decisions directly into `identify()` — they are recorded server-side with `source: 'identify'`:
 
 ```dart
 await pulser.identify(
@@ -469,69 +567,40 @@ await pulser.identify(
 ### Grant / revoke after signup
 
 ```dart
-// User opts in to product update emails
 await pulser.consent.grant(channel: 'email', purpose: ConsentPurpose.product);
-
-// User opts out of marketing push in settings
-await pulser.consent.revoke(channel: 'push', purpose: ConsentPurpose.marketing);
+await pulser.consent.revoke(channel: 'push',  purpose: ConsentPurpose.marketing);
 ```
 
-### Check before showing a consent prompt
+### Check consent
 
 ```dart
 final hasConsent = await pulser.consent.check(
   channel: 'push',
   purpose: ConsentPurpose.marketing,
 );
-
-if (!hasConsent) {
-  // Show opt-in prompt
-}
 ```
 
-`check()` returns `true` if no record exists (fail-open / opt-out model).
-
-### List all consent records
-
-```dart
-final records = await pulser.consent.list();
-
-for (final r in records) {
-  print('${r.channel} / ${r.purpose.name}: ${r.consented ? "granted" : "revoked"} at ${r.createdAt}');
-}
-```
-
-### ConsentRecord fields
-
-| Field | Type | Description |
-|---|---|---|
-| `id` | `String` | Record ID |
-| `channel` | `String` | `push`, `email`, `sms`, `in_app` |
-| `purpose` | `ConsentPurpose` | What the consent covers |
-| `consented` | `bool` | `true` = granted, `false` = revoked |
-| `source` | `String` | Where it was recorded (`app`, `identify`, etc.) |
-| `createdAt` | `DateTime` | When it was recorded |
+Returns `true` if no record exists (fail-open model).
 
 ---
 
-## Delivery & Open Tracking (CTR)
-
-The SDK handles delivery tracking automatically via `handleForegroundMessage` and `persistBackgroundDelivery`. For tap tracking you wire it manually:
+## Delivery, Open & Dismiss Tracking
 
 ```dart
-// Foreground — handled automatically by the SDK
+// Delivered (foreground — handled automatically via handleForegroundMessage)
 pulser.notifications.handleForegroundMessage(title, body, data);
 
-// Background tap
+// Delivered (background tap)
 pulser.notifications.markDelivered(notificationId);
+
+// Opened (user tapped)
 pulser.notifications.markOpened(notificationId);
 
-// Terminated tap
-pulser.notifications.markDelivered(notificationId);
-pulser.notifications.markOpened(notificationId);
+// Dismissed (user swiped away)
+pulser.notifications.markDismissed(notificationId, channel: 'push');
 ```
 
-Calls made before `identify()` completes are queued internally and flushed automatically once the user is identified.
+All calls made before `identify()` completes are queued and flushed automatically. `markDismissed` fires a `notification_dismissed` event which feeds the notification fatigue computed trait.
 
 ---
 
@@ -541,7 +610,7 @@ Calls made before `identify()` completes are queued internally and flushed autom
 await pulser.logout();
 ```
 
-This deactivates the device on the server, disconnects the WebSocket, and clears all stored credentials (device token, user ID, sequence number).
+Deactivates the device on the server, disconnects the WebSocket, and clears all stored credentials.
 
 ---
 
@@ -551,20 +620,26 @@ This deactivates the device on the server, disconnects the WebSocket, and clears
 
 | Member | Type | Description |
 |---|---|---|
-| `identify(userId, pushToken, username?, consent?)` | `Future<void>` | Register device and open WS |
-| `updatePushToken(token)` | `Future<void>` | Update FCM/APNs token |
-| `logout()` | `Future<void>` | Deregister and disconnect |
+| `identify(...)` | `Future<void>` | Register device and open WebSocket |
+| `alias(userId)` | `Future<void>` | Link anonymous ID to identified user |
+| `updatePushToken(token)` | `Future<void>` | Update FCM token |
+| `initAPNs()` | `Future<void>` | iOS: init APNs token handling (call before identify) |
+| `logout()` | `Future<void>` | Deregister device and disconnect |
 | `dispose()` | `void` | Release all resources |
 | `inbox` | `InboxService` | Inbox operations |
-| `events` | `EventService` | Event tracking |
-| `notifications` | `NotificationTracker` | Delivery/open tracking |
-| `preferences` | `PreferenceService` | User preferences |
-| `inApp` | `InAppService` | In-app message evaluation |
-| `consent` | `ConsentService` | Consent management |
-| `onNotification` | `NotificationListener?` | Real-time inbox callback |
-| `onInAppMessage` | `InAppListener?` | Real-time in-app callback |
-| `onConnectionChange` | `ConnectionListener?` | WS connection state callback |
-| `onForegroundMessage` | `ForegroundMessageHandler?` | Foreground FCM callback |
+| `events` | `EventService` | Raw event tracking |
+| `analytics` | `AnalyticsService` | Typed analytics event helpers |
+| `notifications` | `NotificationTracker` | Delivery / open / dismiss tracking |
+| `preferences` | `PreferenceService` | User notification preferences |
+| `inApp` | `InAppService` | In-app message evaluation and tracking |
+| `consent` | `ConsentService` | Per-channel consent management |
+| `users` | `UserService` | User profile and tag management |
+| `onNotification` | `NotificationListener?` | Real-time inbox item callback |
+| `onInAppMessage` | `InAppListener?` | Real-time in-app message callback |
+| `onConnectionChange` | `ConnectionListener?` | WebSocket connection state callback |
+| `onForegroundMessage` | `ForegroundMessageHandler?` | Foreground FCM message callback |
+| `isIdentified` | `bool` | Whether identify() has been called |
+| `hasAnonymousSession` | `Future<bool>` | Whether an anonymous ID is pending alias |
 
 ### `PulserConfig`
 
@@ -577,6 +652,28 @@ This deactivates the device on the server, disconnects the WebSocket, and clears
 | `debug` | `bool` | ❌ | `false` |
 | `pinnedCertificates` | `List<String>?` | ❌ | `null` |
 
+### `AnalyticsService`
+
+| Method | Event fired |
+|---|---|
+| `trackLogin(method, country?, timezone?)` | `login_success` |
+| `trackLoginFailed(reason)` | `login_failed` |
+| `trackLogout(sessionDurationSeconds?)` | `logout` |
+| `trackTokenRefresh()` | `token_refresh` |
+| `trackPasswordResetRequested()` | `password_reset_requested` |
+| `trackPasswordResetCompleted()` | `password_reset_completed` |
+| `trackRegisterStart(referrer?)` | `register_start` |
+| `trackRegisterStep(step, timeOnStepSeconds?, attempts?)` | `register_step_{step}` |
+| `trackRegisterComplete(...)` | `register_complete` |
+| `trackRegisterAbandoned(lastStep, timeSpentSeconds?)` | `register_abandoned` |
+| `trackScreenView(screen, previousScreen?)` | `screen_view` |
+| `trackScreenExit(screen, timeOnScreenSeconds?)` | `screen_exit` |
+| `trackFeatureUsed(feature)` | `feature_used` |
+| `trackNotificationTapped(notificationId, channel?, screenOpened?)` | `notification_tapped` |
+| `trackNotificationDismissed(notificationId, channel?)` | `notification_dismissed` |
+| `trackSearchPerformed(queryLength, resultsCount)` | `search_performed` |
+| `trackAppCrash(stackTraceHash?)` | `app_crash` |
+
 ---
 
 ## Error Handling
@@ -584,7 +681,7 @@ This deactivates the device on the server, disconnects the WebSocket, and clears
 | Exception | Cause |
 |---|---|
 | `PulserAuthException` | `identify()` not called or device token missing |
-| `PulserNetworkException` | Network unreachable or timeout |
+| `PulserNetworkException` | Network unreachable or timeout after retries |
 | `PulserApiException` | Server returned 4xx/5xx |
 | `PulserRateLimitException` | 429 — includes `retryAfterSeconds` |
 
@@ -597,5 +694,7 @@ try {
   print('Network error: ${e.message}');
 } on PulserApiException catch (e) {
   print('API error ${e.statusCode}: ${e.message}');
+} on PulserRateLimitException catch (e) {
+  print('Rate limited — retry in ${e.retryAfterSeconds}s');
 }
 ```
