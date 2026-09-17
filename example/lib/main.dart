@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:pulser_sdk/notif_sdk.dart';
 import 'profile_screen.dart';
@@ -50,16 +51,16 @@ class _HomePageState extends State<HomePage> {
     _pulser.onConnectionChange = (connected) {
       setState(() => _connected = connected);
       _addLog(
-          connected ? '🟢 WebSocket connected' : '🔴 WebSocket disconnected');
+          connected ? 'WebSocket connected' : 'WebSocket disconnected');
     };
 
     _pulser.onNotification = (item) {
-      _addLog('📬 New notification: ${item.title}');
+      _addLog('New notification: ${item.title}');
       setState(() => _inbox.insert(0, item));
     };
 
     _pulser.onInAppMessage = (messages) {
-      _addLog('💬 In-app messages: ${messages.length}');
+      _addLog('In-app messages: ${messages.length}');
       for (final msg in messages) {
         _showInAppMessage(msg);
       }
@@ -107,12 +108,12 @@ class _HomePageState extends State<HomePage> {
   Future<void> _initPush() async {
     // iOS: init APNs — token arrives via native plugin callback
     await _pulser.initAPNs();
-    _addLog('🔔 APNs init requested — waiting for token...');
+    _addLog('APNs init requested — waiting for token...');
 
     // Android: get FCM token
     final fcmToken = await FirebaseMessaging.instance.getToken();
     if (fcmToken != null) {
-      _addLog('🔑 FCM token: ${fcmToken.substring(0, 20)}...');
+      _addLog('FCM token: ${fcmToken.substring(0, 20)}...');
     }
   }
 
@@ -124,9 +125,9 @@ class _HomePageState extends State<HomePage> {
         username: 'Demo User',
         pushToken: fcmToken,
       );
-      _addLog('✅ Identified as user_demo_001');
+      _addLog('Identified as user_demo_001');
     } catch (e) {
-      _addLog('❌ identify failed: $e');
+      _addLog('identify failed: $e');
     }
   }
 
@@ -135,9 +136,9 @@ class _HomePageState extends State<HomePage> {
       final resp = await _pulser.inbox.fetch(limit: 20);
       setState(() => _inbox = resp.items);
       _addLog(
-          '📥 Fetched ${resp.items.length} items (${resp.unreadCount} unread)');
+          'Fetched ${resp.items.length} items (${resp.unreadCount} unread)');
     } catch (e) {
-      _addLog('❌ inbox fetch failed: $e');
+      _addLog('inbox fetch failed: $e');
     }
   }
 
@@ -145,18 +146,18 @@ class _HomePageState extends State<HomePage> {
     try {
       final id = await _pulser.events
           .track('button_tapped', properties: {'screen': 'home'});
-      _addLog('📊 Event tracked: $id');
+      _addLog('Event tracked: $id');
     } catch (e) {
-      _addLog('❌ track failed: $e');
+      _addLog('track failed: $e');
     }
   }
 
   Future<void> _evaluateInApp() async {
     try {
       final messages = await _pulser.inApp.evaluate(screen: 'home');
-      _addLog('💬 Evaluated ${messages.length} in-app messages');
+      _addLog('Evaluated ${messages.length} in-app messages');
     } catch (e) {
-      _addLog('❌ inapp evaluate failed: $e');
+      _addLog('inapp evaluate failed: $e');
     }
   }
 
@@ -175,9 +176,9 @@ class _HomePageState extends State<HomePage> {
         _inbox = [];
         _connected = false;
       });
-      _addLog('👋 Logged out');
+      _addLog('Logged out');
     } catch (e) {
-      _addLog('❌ logout failed: $e');
+      _addLog('logout failed: $e');
     }
   }
 

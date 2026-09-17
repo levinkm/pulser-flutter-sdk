@@ -316,7 +316,7 @@ class _MediaGrid extends StatelessWidget {
         itemCount: 6,
         itemBuilder: (_, i) => Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceVariant,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(6),
           ),
           child: Icon(

@@ -1,7 +1,4 @@
-import 'dart:async';
-import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 
 import 'package:pulser_sdk/src/core/config.dart';
@@ -19,8 +16,6 @@ import 'package:pulser_sdk/src/storage/secure_store.dart';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
-class MockHttpClient extends Mock implements http.Client {}
-
 class MockSecureStore extends Mock implements SecureStore {}
 
 class MockEventService extends Mock implements EventService {}
@@ -32,10 +27,6 @@ PulserConfig _config() => const PulserConfig(
       apiKey: 'test_key_abc',
       appId: 'app-123',
     );
-
-http.Response _json(Map<String, dynamic> body, {int status = 200}) =>
-    http.Response(jsonEncode(body), status,
-        headers: {'content-type': 'application/json'});
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
