@@ -7,8 +7,6 @@ analyzer:
     public_member_api_docs: ignore
     sort_constructors_first: ignore
     always_put_control_body_on_new_line: ignore
-    specify_nonobvious_local_variable_types: ignore
-    omit_obvious_local_variable_types: ignore
     prefer_foreach: ignore
     avoid_setters_without_getters: ignore
     use_setters_to_change_properties: ignore
