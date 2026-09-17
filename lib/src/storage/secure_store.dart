@@ -1,14 +1,21 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 
-/// Encrypted credential storage — singleton so all services share one instance.
+/// Encrypted credential storage - singleton so all services share one instance.
 /// iOS: Keychain. Android: EncryptedSharedPreferences.
 class SecureStore {
   static final SecureStore _instance = SecureStore._internal();
   factory SecureStore() => _instance;
-  SecureStore._internal();
+
+  SecureStore._internal()
+      : _storage = const FlutterSecureStorage(
+          aOptions: AndroidOptions(),
+          iOptions: IOSOptions(
+              accessibility: KeychainAccessibility.first_unlock_this_device),
+        );
 
   static const _uuid = Uuid();
+
   static const _keyDeviceToken = 'notif_device_token';
   static const _keyDeviceId = 'notif_device_id';
   static const _keyLastSeq = 'notif_last_seq';
@@ -20,27 +27,25 @@ class SecureStore {
 
   final FlutterSecureStorage _storage;
 
-  SecureStore()
-      : _storage = const FlutterSecureStorage(
-          aOptions: AndroidOptions(),
-          iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
-        );
-
   Future<String?> get deviceToken => _storage.read(key: _keyDeviceToken);
-  Future<void> setDeviceToken(String token) => _storage.write(key: _keyDeviceToken, value: token);
+  Future<void> setDeviceToken(String token) =>
+      _storage.write(key: _keyDeviceToken, value: token);
 
   Future<String?> get deviceId => _storage.read(key: _keyDeviceId);
-  Future<void> setDeviceId(String id) => _storage.write(key: _keyDeviceId, value: id);
+  Future<void> setDeviceId(String id) =>
+      _storage.write(key: _keyDeviceId, value: id);
 
   Future<String?> get userId => _storage.read(key: _keyUserId);
-  Future<void> setUserId(String id) => _storage.write(key: _keyUserId, value: id);
+  Future<void> setUserId(String id) =>
+      _storage.write(key: _keyUserId, value: id);
 
   Future<int> get lastSeq async {
     final v = await _storage.read(key: _keyLastSeq);
     return v != null ? int.tryParse(v) ?? 0 : 0;
   }
 
-  Future<void> setLastSeq(int seq) => _storage.write(key: _keyLastSeq, value: '$seq');
+  Future<void> setLastSeq(int seq) =>
+      _storage.write(key: _keyLastSeq, value: '$seq');
 
   Future<List<String>> get pendingDeliveries async {
     final v = await _storage.read(key: _keyPendingDeliveries);
@@ -51,11 +56,14 @@ class SecureStore {
   Future<void> addPendingDelivery(String id) async {
     final current = await pendingDeliveries;
     if (!current.contains(id)) {
-      await _storage.write(key: _keyPendingDeliveries, value: [...current, id].join(','));
+      await _storage.write(
+          key: _keyPendingDeliveries,
+          value: [...current, id].join(','));
     }
   }
 
-  Future<void> clearPendingDeliveries() => _storage.delete(key: _keyPendingDeliveries);
+  Future<void> clearPendingDeliveries() =>
+      _storage.delete(key: _keyPendingDeliveries);
 
   /// Returns the stored anonymous ID, generating and persisting one if absent.
   Future<String> get anonymousId async {
@@ -68,20 +76,23 @@ class SecureStore {
   }
 
   /// Returns the stored anonymous ID without generating one if absent.
-  Future<String?> get rawAnonymousId => _storage.read(key: _keyAnonymousId);
+  Future<String?> get rawAnonymousId =>
+      _storage.read(key: _keyAnonymousId);
 
   Future<void> clearAnonymousId() => _storage.delete(key: _keyAnonymousId);
 
-  /// APNs token received before identify() was called — consumed on next identify().
-  Future<String?> get pendingAPNsToken => _storage.read(key: _keyPendingAPNsToken);
-  Future<void> setPendingAPNsToken(String token) => _storage.write(key: _keyPendingAPNsToken, value: token);
-  Future<void> clearPendingAPNsToken() => _storage.delete(key: _keyPendingAPNsToken);
+  Future<String?> get pendingAPNsToken =>
+      _storage.read(key: _keyPendingAPNsToken);
+  Future<void> setPendingAPNsToken(String token) =>
+      _storage.write(key: _keyPendingAPNsToken, value: token);
+  Future<void> clearPendingAPNsToken() =>
+      _storage.delete(key: _keyPendingAPNsToken);
 
-  /// FCM push token — persisted so it can be paired with APNs token on rotation.
   Future<String?> get fcmToken => _storage.read(key: _keyFCMToken);
-  Future<void> setFCMToken(String token) => _storage.write(key: _keyFCMToken, value: token);
+  Future<void> setFCMToken(String token) =>
+      _storage.write(key: _keyFCMToken, value: token);
 
-  /// Wipe all credentials (on logout).
+  /// Wipe all credentials on logout.
   Future<void> clear() async {
     await _storage.delete(key: _keyDeviceToken);
     await _storage.delete(key: _keyDeviceId);

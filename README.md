@@ -1,6 +1,6 @@
 # Pulser SDK for Flutter
 
-Multi-channel notification SDK for Flutter. Supports push notifications (FCM + APNs direct), persistent inbox, in-app messages, event tracking, analytics instrumentation, delivery/open/dismiss tracking, and user preferences — with real-time WebSocket delivery and automatic reconnection.
+Multi-channel notification SDK for Flutter. Supports push notifications (FCM + APNs direct), persistent inbox, in-app messages, event tracking, analytics instrumentation, delivery/open/dismiss tracking, and user preferences with real-time WebSocket delivery and automatic reconnection.
 
 ---
 
@@ -38,13 +38,13 @@ Multi-channel notification SDK for Flutter. Supports push notifications (FCM + A
 | Android | API 21 (Android 5.0) |
 | iOS | 13.0 |
 
-The SDK requires **Firebase Cloud Messaging (FCM)** for push delivery on Android. On iOS, FCM is used as a fallback — the server prefers direct APNs when credentials are configured.
+The SDK requires **Firebase Cloud Messaging (FCM)** for push delivery on Android. On iOS, FCM is used as a fallback; the server prefers direct APNs when credentials are configured.
 
 ---
 
 ## Installation
 
-### Option A — Git
+### Option A - Git
 
 ```yaml
 # pubspec.yaml
@@ -55,7 +55,7 @@ dependencies:
       ref: main
 ```
 
-### Option B — Local path (monorepo)
+### Option B - Local path (monorepo)
 
 ```yaml
 dependencies:
@@ -137,7 +137,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:pulser_sdk/notif_sdk.dart';
 
-// Background FCM handler — must be a top-level function
+// Background FCM handler - must be a top-level function
 @pragma('vm:entry-point')
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
   await NotificationTracker.persistBackgroundDelivery(message.data);
@@ -188,7 +188,7 @@ Future<void> onUserLoggedIn(String userId) async {
   await pulser.identify(
     userId: userId,
     pushToken: fcmToken,
-    email: 'user@example.com',   // optional — enables email channel
+    email: 'user@example.com',   // optional, enables email channel
     username: 'Jane Doe',        // optional
   );
 
@@ -282,7 +282,7 @@ Delivery IDs are flushed automatically when `identify()` completes.
 
 ## APNs Direct (iOS)
 
-Call `initAPNs()` once before `identify()`. The SDK handles APNs token registration, rotation, and environment detection (sandbox vs production) automatically — no manual configuration required.
+Call `initAPNs()` once before `identify()`. The SDK handles APNs token registration, rotation, and environment detection (sandbox vs production) automatically, no manual configuration required.
 
 ```dart
 final pulser = Pulser(config: PulserConfig(...));
@@ -307,7 +307,7 @@ final resp = await pulser.inbox.fetch(limit: 20);
 print('${resp.items.length} items, ${resp.unreadCount} unread');
 
 for (final item in resp.items) {
-  print('${item.title} — ${item.isRead ? "read" : "unread"}');
+  print('${item.title} - ${item.isRead ? 'read' : 'unread'}');
 }
 ```
 
@@ -402,7 +402,7 @@ pulser.onInAppMessage = (List<InAppMessage> messages) {
 
 ## Analytics Event Tracking
 
-The `analytics` service provides typed helpers for the full event taxonomy. Device context (`platform`, `os_version`, `app_version`) is automatically attached to every event — no manual enrichment needed.
+The `analytics` service provides typed helpers for the full event taxonomy. Device context (`platform`, `os_version`, `app_version`) is automatically attached to every event, no manual enrichment needed.
 
 ### Authentication
 
@@ -410,7 +410,7 @@ The `analytics` service provides typed helpers for the full event taxonomy. Devi
 // On login success
 await pulser.analytics.trackLogin(
   method: 'email',       // 'email' | 'phone' | 'google' | 'apple'
-  country: 'GH',         // optional — GeoIP enrichment handles this server-side
+  country: 'GH',         // optional, GeoIP enrichment handles this server-side
   timezone: 'Africa/Accra',
 );
 
@@ -587,7 +587,7 @@ Returns `true` if no record exists (fail-open model).
 ## Delivery, Open & Dismiss Tracking
 
 ```dart
-// Delivered (foreground — handled automatically via handleForegroundMessage)
+// Delivered (foreground, handled automatically via handleForegroundMessage)
 pulser.notifications.handleForegroundMessage(title, body, data);
 
 // Delivered (background tap)
@@ -645,12 +645,12 @@ Deactivates the device on the server, disconnects the WebSocket, and clears all 
 
 | Parameter | Type | Required | Default |
 |---|---|---|---|
-| `baseURL` | `String` | ✅ | — |
-| `apiKey` | `String` | ✅ | — |
-| `appId` | `String` | ✅ | — |
-| `timeout` | `Duration` | ❌ | `10s` |
-| `debug` | `bool` | ❌ | `false` |
-| `pinnedCertificates` | `List<String>?` | ❌ | `null` |
+| `baseURL` | `String` | Yes | - |
+| `apiKey` | `String` | Yes | - |
+| `appId` | `String` | Yes | - |
+| `timeout` | `Duration` | No | `10s` |
+| `debug` | `bool` | No | `false` |
+| `pinnedCertificates` | `List<String>?` | No | `null` |
 
 ### `AnalyticsService`
 
@@ -683,7 +683,7 @@ Deactivates the device on the server, disconnects the WebSocket, and clears all 
 | `PulserAuthException` | `identify()` not called or device token missing |
 | `PulserNetworkException` | Network unreachable or timeout after retries |
 | `PulserApiException` | Server returned 4xx/5xx |
-| `PulserRateLimitException` | 429 — includes `retryAfterSeconds` |
+| `PulserRateLimitException` | 429, includes `retryAfterSeconds` |
 
 ```dart
 try {
@@ -695,6 +695,6 @@ try {
 } on PulserApiException catch (e) {
   print('API error ${e.statusCode}: ${e.message}');
 } on PulserRateLimitException catch (e) {
-  print('Rate limited — retry in ${e.retryAfterSeconds}s');
+  print('Rate limited, retry in ${e.retryAfterSeconds}s');
 }
 ```
