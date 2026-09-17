@@ -1,0 +1,27 @@
+analyzer:
+  exclude:
+    - example/**
+    - build/**
+    - ios/**
+  errors:
+    public_member_api_docs: ignore
+    sort_constructors_first: ignore
+    always_put_control_body_on_new_line: ignore
+    specify_nonobvious_local_variable_types: ignore
+    omit_obvious_local_variable_types: ignore
+    prefer_foreach: ignore
+    avoid_setters_without_getters: ignore
+    use_setters_to_change_properties: ignore
+    directives_ordering: ignore
+    avoid_redundant_argument_values: ignore
+    use_named_constants: ignore
+    no_literal_bool_comparisons: ignore
+    inference_failure_on_instance_creation: ignore
+    inference_failure_on_collection_literal: ignore
+    strict_raw_type: ignore
+    eol_at_end_of_file: ignore
+    unnecessary_breaks: ignore
+    use_late_for_private_fields_and_variables: ignore
+    use_if_null_to_convert_nulls_to_bools: ignore
+    avoid_dynamic_calls: ignore
+    prefer_const_constructors: ignore
