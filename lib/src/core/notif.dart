@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'dart:math';
+import 'dart:ui';
+import 'package:flutter/foundation.dart';
 
 import '../models/inbox_item.dart';
 import '../models/inapp_message.dart';
@@ -184,6 +186,37 @@ class Pulser {
     // Pass only the FCM token — apnsToken is omitted so the upsert
     // preserves the existing apns_token column value on the backend.
     await _registerDevice(userId: userId, pushToken: token);
+  }
+
+  /// Initialise automatic crash tracking.
+  /// Hooks into [FlutterError.onError] and [PlatformDispatcher.onError].
+  /// Call once after constructing Pulser, before [identify].
+  ///
+  /// ```dart
+  /// final pulser = Pulser(config: PulserConfig(...));
+  /// pulser.enableCrashTracking();
+  /// ```
+  void enableCrashTracking() {
+    final originalFlutterError = FlutterError.onError;
+    FlutterError.onError = (FlutterErrorDetails details) {
+      analytics.trackAppCrash(
+        stackTraceHash: details.stack != null ? _hashStack(details.stack.toString()) : null,
+      ).ignore();
+      originalFlutterError?.call(details);
+    };
+
+    PlatformDispatcher.instance.onError = (error, stack) {
+      analytics.trackAppCrash(
+        stackTraceHash: _hashStack(stack.toString()),
+      ).ignore();
+      return false;
+    };
+  }
+
+  static String _hashStack(String stack) {
+    // Take first 3 frames as a stable fingerprint
+    final lines = stack.split('\n').where((l) => l.trim().isNotEmpty).take(3).join('|');
+    return lines.hashCode.toRadixString(16);
   }
 
   /// Initialise native APNs token handling on iOS.

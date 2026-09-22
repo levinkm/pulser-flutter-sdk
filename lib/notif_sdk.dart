@@ -27,3 +27,4 @@ export 'src/services/notification_tracker.dart';
 export 'src/services/user_service.dart';
 export 'src/services/consent_service.dart';
 export 'src/services/apns_token_service.dart';
+export 'src/services/route_stack_observer.dart';

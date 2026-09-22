@@ -23,6 +23,8 @@ Multi-channel notification SDK for Flutter. Supports push notifications (FCM + A
 - [User Preferences](#user-preferences)
 - [Consent Management](#consent-management)
 - [Delivery, Open & Dismiss Tracking](#delivery-open--dismiss-tracking)
+- [Session Depth Tracking](#session-depth-tracking)
+- [Crash Tracking](#crash-tracking)
 - [Logout](#logout)
 - [API Reference](#api-reference)
 - [Error Handling](#error-handling)
@@ -161,7 +163,10 @@ Future<void> main() async {
     ),
   );
 
-  // 4. (iOS only) Init APNs token handling before identify()
+  // 4. Enable automatic crash tracking (before runApp)
+  pulser.enableCrashTracking();
+
+  // 5. (iOS only) Init APNs token handling before identify()
   await pulser.initAPNs();
 
   // 5. Wire foreground FCM messages
@@ -466,6 +471,8 @@ await pulser.analytics.trackScreenExit(
 );
 ```
 
+For automatic screen tracking with session depth, see [Session Depth Tracking](#session-depth-tracking).
+
 ### Engagement
 
 ```dart
@@ -476,7 +483,7 @@ await pulser.analytics.trackSearchPerformed(
   resultsCount: results.length,
 );
 
-// Crash reporting
+// Manual crash reporting (use enableCrashTracking() for automatic)
 await pulser.analytics.trackAppCrash(stackTraceHash: hash);
 ```
 
@@ -604,6 +611,108 @@ All calls made before `identify()` completes are queued and flushed automaticall
 
 ---
 
+## Session Depth Tracking
+
+`RouteStackObserver` automatically fires `screen_view` events with a `session_depth` property on every navigation. It supports plain `Navigator`, GoRouter, and mixed setups.
+
+### Plain Navigator
+
+```dart
+import 'package:pulser_sdk/notif_sdk.dart';
+
+MaterialApp(
+  navigatorObservers: [RouteStackObserver(pulser.analytics)],
+)
+```
+
+Ensure routes are named so the observer can read the screen name:
+
+```dart
+Navigator.pushNamed(context, '/wallet');
+// or
+Navigator.push(context, MaterialPageRoute(
+  settings: const RouteSettings(name: '/wallet'),
+  builder: (_) => WalletScreen(),
+));
+```
+
+### GoRouter
+
+```dart
+final observer = RouteStackObserver(pulser.analytics);
+
+final router = GoRouter(
+  observers: [observer],  // catches nested Navigator pushes (modals, dialogs)
+  routes: [...],
+);
+```
+
+Then wire the delegate listener once, e.g. in your root widget's `initState`:
+
+```dart
+@override
+void initState() {
+  super.initState();
+  widget.router.routerDelegate.addListener(_onRouteChange);
+}
+
+void _onRouteChange() {
+  observer.onGoRouterChange(widget.router.routerDelegate.currentConfiguration);
+}
+
+@override
+void dispose() {
+  widget.router.routerDelegate.removeListener(_onRouteChange);
+  super.dispose();
+}
+```
+
+### Mixed (GoRouter + Navigator.push)
+
+The same setup as GoRouter above handles this automatically. GoRouter navigations are reported via `onGoRouterChange`, and direct `Navigator.push` calls (e.g. `showModalBottomSheet`, `showDialog`) are caught by the observer's `didPush`. Deduplication is handled internally so events are never double-counted.
+
+### session_depth in events
+
+Every `screen_view` event fired by the observer includes:
+
+| Property | Type | Description |
+|---|---|---|
+| `screen` | `String` | Route name of the current screen |
+| `previous_screen` | `String?` | Route name of the previous screen |
+| `session_depth` | `int` | Number of screens deep in the navigation stack |
+
+---
+
+## Crash Tracking
+
+Call `enableCrashTracking()` once after constructing Pulser. It hooks into both Flutter error surfaces automatically — no manual `trackAppCrash` calls needed.
+
+```dart
+final pulser = Pulser(config: PulserConfig(...));
+pulser.enableCrashTracking(); // before runApp
+```
+
+This captures:
+- **Framework errors** — `FlutterError.onError` (widget build errors, rendering errors)
+- **Uncaught async errors** — `PlatformDispatcher.onError` (unhandled futures, isolate errors)
+
+Each crash fires an `app_crash` event with a `stack_trace_hash` fingerprint derived from the top 3 stack frames. The hash is stable across repeated crashes of the same issue, so the dashboard Crash Correlation card can group and count them correctly.
+
+For crashes you want to track manually (e.g. caught exceptions you still want to report):
+
+```dart
+try {
+  await riskyOperation();
+} catch (e, stack) {
+  await pulser.analytics.trackAppCrash(
+    stackTraceHash: stack.toString().hashCode.toRadixString(16),
+  );
+  rethrow;
+}
+```
+
+---
+
 ## Logout
 
 ```dart
@@ -624,6 +733,7 @@ Deactivates the device on the server, disconnects the WebSocket, and clears all 
 | `alias(userId)` | `Future<void>` | Link anonymous ID to identified user |
 | `updatePushToken(token)` | `Future<void>` | Update FCM token |
 | `initAPNs()` | `Future<void>` | iOS: init APNs token handling (call before identify) |
+| `enableCrashTracking()` | `void` | Hook into Flutter error handlers for automatic crash reporting |
 | `logout()` | `Future<void>` | Deregister device and disconnect |
 | `dispose()` | `void` | Release all resources |
 | `inbox` | `InboxService` | Inbox operations |
@@ -666,7 +776,7 @@ Deactivates the device on the server, disconnects the WebSocket, and clears all 
 | `trackRegisterStep(step, timeOnStepSeconds?, attempts?)` | `register_step_{step}` |
 | `trackRegisterComplete(...)` | `register_complete` |
 | `trackRegisterAbandoned(lastStep, timeSpentSeconds?)` | `register_abandoned` |
-| `trackScreenView(screen, previousScreen?)` | `screen_view` |
+| `trackScreenView(screen, previousScreen?, extra?)` | `screen_view` |
 | `trackScreenExit(screen, timeOnScreenSeconds?)` | `screen_exit` |
 | `trackFeatureUsed(feature)` | `feature_used` |
 | `trackNotificationTapped(notificationId, channel?, screenOpened?)` | `notification_tapped` |

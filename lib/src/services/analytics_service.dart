@@ -113,11 +113,13 @@ class AnalyticsService {
     required String screen,
     String? previousScreen,
     String? referrer,
+    Map<String, dynamic>? extra,
   }) async {
     await _events.track('screen_view', properties: {
       'screen': screen,
       if (previousScreen != null) 'previous_screen': previousScreen,
       if (referrer != null) 'referrer': referrer,
+      ...?extra,
     });
   }
 
