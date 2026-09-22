@@ -102,9 +102,6 @@ class Pulser {
     consent = ConsentService(api: _api);
   }
 
-  RouteStackObserver get _routeObserver => RouteStackObserver(analytics)
-    .._onScreenChange = (screen) => _currentScreen = screen;
-
   /// Identify the current user. Registers the device and syncs profile/tags.
   /// Call on login or app launch after obtaining the push token.
   ///
