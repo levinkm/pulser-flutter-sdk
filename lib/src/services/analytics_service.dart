@@ -172,9 +172,85 @@ class AnalyticsService {
     });
   }
 
-  Future<void> trackAppCrash({String? stackTraceHash}) async {
+  Future<void> trackAppCrash({
+    String? message,
+    String? stackTrace,
+    String? stackTraceHash,
+    bool fatal = false,
+    Map<String, dynamic>? context,
+  }) async {
     await _events.track('app_crash', properties: {
+      if (message != null) 'message': message,
+      if (stackTrace != null) 'stack_trace': stackTrace,
       if (stackTraceHash != null) 'stack_trace_hash': stackTraceHash,
+      'fatal': fatal,
+      ...?context,
+    });
+  }
+
+  // ── Send Money Funnel ─────────────────────────────────────────────────────
+
+  /// Track entry into a send money step.
+  /// [step] — one of: 'amount', 'recipient', 'review', 'pay'
+  Future<void> trackSendMoneyStep({
+    required String step,
+    int? stepIndex,
+    int? timeOnPreviousStepSeconds,
+    Map<String, dynamic>? extra,
+  }) async {
+    await _events.track('send_money_step', properties: {
+      'step': step,
+      if (stepIndex != null) 'step_index': stepIndex,
+      if (timeOnPreviousStepSeconds != null)
+        'time_on_previous_step_seconds': timeOnPreviousStepSeconds,
+      ...?extra,
+    });
+  }
+
+  /// Track successful send money submission.
+  Future<void> trackSendMoneySuccess({
+    required String method,
+    String? transactionId,
+    String? fromCurrency,
+    String? toCurrency,
+    int? totalFlowSeconds,
+    Map<String, dynamic>? extra,
+  }) async {
+    await _events.track('send_money_success', properties: {
+      'method': method,
+      if (transactionId != null) 'transaction_id': transactionId,
+      if (fromCurrency != null) 'from_currency': fromCurrency,
+      if (toCurrency != null) 'to_currency': toCurrency,
+      if (totalFlowSeconds != null) 'total_flow_seconds': totalFlowSeconds,
+      ...?extra,
+    });
+  }
+
+  /// Track send money failure (API error or validation).
+  Future<void> trackSendMoneyFailure({
+    required String step,
+    required String error,
+    String? method,
+    Map<String, dynamic>? extra,
+  }) async {
+    await _events.track('send_money_failure', properties: {
+      'step': step,
+      'error': error,
+      if (method != null) 'method': method,
+      ...?extra,
+    });
+  }
+
+  /// Track user abandoning the send money flow.
+  Future<void> trackSendMoneyAbandoned({
+    required String lastStep,
+    int? timeSpentSeconds,
+    Map<String, dynamic>? extra,
+  }) async {
+    await _events.track('send_money_abandoned', properties: {
+      'last_step': lastStep,
+      if (timeSpentSeconds != null) 'time_spent_seconds': timeSpentSeconds,
+      ...?extra,
     });
   }
 

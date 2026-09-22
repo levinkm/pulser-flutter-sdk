@@ -199,22 +199,33 @@ class Pulser {
   void enableCrashTracking() {
     final originalFlutterError = FlutterError.onError;
     FlutterError.onError = (FlutterErrorDetails details) {
+      final stack = details.stack?.toString() ?? '';
       analytics.trackAppCrash(
-        stackTraceHash: details.stack != null ? _hashStack(details.stack.toString()) : null,
+        message: details.exceptionAsString(),
+        stackTrace: stack.isNotEmpty ? stack : null,
+        stackTraceHash: stack.isNotEmpty ? _hashStack(stack) : null,
+        fatal: false,
+        context: {
+          if (details.library != null) 'library': details.library,
+          if (details.context != null) 'flutter_context': details.context.toString(),
+        },
       ).ignore();
       originalFlutterError?.call(details);
     };
 
     PlatformDispatcher.instance.onError = (error, stack) {
+      final stackStr = stack.toString();
       analytics.trackAppCrash(
-        stackTraceHash: _hashStack(stack.toString()),
+        message: error.toString(),
+        stackTrace: stackStr,
+        stackTraceHash: _hashStack(stackStr),
+        fatal: true,
       ).ignore();
       return false;
     };
   }
 
   static String _hashStack(String stack) {
-    // Take first 3 frames as a stable fingerprint
     final lines = stack.split('\n').where((l) => l.trim().isNotEmpty).take(3).join('|');
     return lines.hashCode.toRadixString(16);
   }
