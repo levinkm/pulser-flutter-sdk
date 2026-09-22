@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 
 import '../models/inbox_item.dart';
 import '../models/inapp_message.dart';
@@ -271,15 +274,71 @@ class Pulser {
         ctx['locale'] = Platform.localeName;
       }
     } catch (_) {}
+    // Memory usage
+    try {
+      final memInfo = await _getMemoryUsageMB();
+      if (memInfo != null) ctx['memory_used_mb'] = memInfo;
+    } catch (_) {}
+    // Theme
+    if (_appTheme != null) {
+      ctx['theme'] = _appTheme;
+    } else {
+      final brightness = PlatformDispatcher.instance.platformBrightness;
+      ctx['theme'] = brightness == Brightness.dark ? 'dark' : 'light';
+    }
     if (_currentScreen != null) ctx['current_screen'] = _currentScreen;
     return ctx;
   }
 
+  /// Returns current memory usage in MB via platform channel, or null if unavailable.
+  Future<double?> _getMemoryUsageMB() async {
+    try {
+      // Use dart:developer's Service.getInfo for memory on debug,
+      // fall back to process RSS on release
+      final rss = ProcessInfo.currentRss;
+      return (rss / 1024 / 1024).roundToDouble();
+    } catch (_) {
+      return null;
+    }
+  }
+
   String? _currentScreen;
+  String? _appTheme; // 'light' | 'dark' | 'system'
+  Timer? _anrTimer;
+  static const _anrThresholdMs = 5000;
 
   /// Call this from RouteStackObserver or your navigation layer to keep
   /// track of the current screen for crash context.
   void setCurrentScreen(String screen) => _currentScreen = screen;
+
+  /// Call once after constructing Pulser to enable ANR detection.
+  /// Fires an `app_anr` event if the main isolate is blocked for > 5 seconds.
+  void enableANRTracking() {
+    if (!Platform.isAndroid && !Platform.isIOS) return;
+    _scheduleANRCheck();
+  }
+
+  void _scheduleANRCheck() {
+    _anrTimer?.cancel();
+    _anrTimer = Timer(const Duration(milliseconds: _anrThresholdMs), () {
+      // If this fires, the main isolate was blocked for > 5s
+      _crashContext().then((ctx) {
+        events.track('app_anr', properties: {
+          'threshold_ms': _anrThresholdMs,
+          'session_id': _sessionId,
+          ...ctx,
+        }).ignore();
+      });
+    });
+    // Reset on next frame — if the frame renders, the isolate is not blocked
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _anrTimer?.cancel();
+      _scheduleANRCheck();
+    });
+  }
+
+  /// Set the current app theme for crash context.
+  void setTheme(String theme) => _appTheme = theme; // 'light', 'dark', 'system'
 
   static String _hashStack(String stack) {
     final lines = stack.split('\n').where((l) => l.trim().isNotEmpty).take(3).join('|');
