@@ -41,15 +41,15 @@ public class PulserPlugin: NSObject, FlutterPlugin {
         // No-op — SDK degrades gracefully to FCM-only
     }
 
-    // Called by Firebase's UNUserNotificationCenterDelegate when a notification is tapped.
-    // Host app should forward this from their delegate, or wire via FirebaseMessaging.
+    @discardableResult
     public func application(_ application: UIApplication,
                             didReceiveRemoteNotification userInfo: [AnyHashable: Any],
-                            fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+                            fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) -> Bool {
         if let notifId = userInfo["notification_id"] as? String {
             PulserPlugin.channel?.invokeMethod("onDelivery", arguments: notifId)
         }
         completionHandler(.newData)
+        return true
     }
 
     // MARK: - Private
