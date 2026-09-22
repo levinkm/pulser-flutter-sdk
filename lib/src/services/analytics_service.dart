@@ -191,14 +191,16 @@ class AnalyticsService {
   // ── Send Money Funnel ─────────────────────────────────────────────────────
 
   /// Track entry into a send money step.
-  /// [step] — one of: 'amount', 'recipient', 'review', 'pay'
+  /// Fires a distinct event per step name, e.g. send_money_country_select,
+  /// so funnel analysis can match each step by event name directly.
   Future<void> trackSendMoneyStep({
     required String step,
     int? stepIndex,
     int? timeOnPreviousStepSeconds,
     Map<String, dynamic>? extra,
   }) async {
-    await _events.track('send_money_step', properties: {
+    final eventName = 'send_money_${step.replaceAll(RegExp(r'[^a-z0-9_]'), '_')}';
+    await _events.track(eventName, properties: {
       'step': step,
       if (stepIndex != null) 'step_index': stepIndex,
       if (timeOnPreviousStepSeconds != null)
