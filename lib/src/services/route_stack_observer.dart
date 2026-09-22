@@ -93,7 +93,11 @@ class RouteStackObserver extends NavigatorObserver {
       extra: {'session_depth': _depth},
     );
     _current = screen;
+    _onScreenChange?.call(screen);
   }
+
+  // Called by Pulser to keep crash context in sync
+  void Function(String)? _onScreenChange;
 
   String? _name(Route? route) => route?.settings.name;
 }

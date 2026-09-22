@@ -97,6 +97,9 @@ class Pulser {
     consent = ConsentService(api: _api);
   }
 
+  RouteStackObserver get _routeObserver => RouteStackObserver(analytics)
+    .._onScreenChange = (screen) => _currentScreen = screen;
+
   /// Identify the current user. Registers the device and syncs profile/tags.
   /// Call on login or app launch after obtaining the push token.
   ///
@@ -200,30 +203,83 @@ class Pulser {
     final originalFlutterError = FlutterError.onError;
     FlutterError.onError = (FlutterErrorDetails details) {
       final stack = details.stack?.toString() ?? '';
-      analytics.trackAppCrash(
-        message: details.exceptionAsString(),
-        stackTrace: stack.isNotEmpty ? stack : null,
-        stackTraceHash: stack.isNotEmpty ? _hashStack(stack) : null,
-        fatal: false,
-        context: {
-          if (details.library != null) 'library': details.library,
-          if (details.context != null) 'flutter_context': details.context.toString(),
-        },
-      ).ignore();
+      final breadcrumbs = List<Map<String, dynamic>>.from(events.breadcrumbs);
+      _crashContext().then((ctx) {
+        analytics.trackAppCrash(
+          message: details.exceptionAsString(),
+          stackTrace: stack.isNotEmpty ? stack : null,
+          stackTraceHash: stack.isNotEmpty ? _hashStack(stack) : null,
+          fatal: false,
+          context: {
+            if (details.library != null) 'library': details.library,
+            if (details.context != null) 'flutter_context': details.context.toString(),
+            'session_id': _sessionId,
+            'breadcrumbs': breadcrumbs,
+            ...ctx,
+          },
+        ).ignore();
+      });
       originalFlutterError?.call(details);
     };
 
     PlatformDispatcher.instance.onError = (error, stack) {
       final stackStr = stack.toString();
-      analytics.trackAppCrash(
-        message: error.toString(),
-        stackTrace: stackStr,
-        stackTraceHash: _hashStack(stackStr),
-        fatal: true,
-      ).ignore();
+      final breadcrumbs = List<Map<String, dynamic>>.from(events.breadcrumbs);
+      _crashContext().then((ctx) {
+        analytics.trackAppCrash(
+          message: error.toString(),
+          stackTrace: stackStr,
+          stackTraceHash: _hashStack(stackStr),
+          fatal: true,
+          context: {
+            'session_id': _sessionId,
+            'breadcrumbs': breadcrumbs,
+            ...ctx,
+          },
+        ).ignore();
+      });
       return false;
     };
   }
+
+  /// Collects full device + app context for crash reports.
+  Future<Map<String, dynamic>> _crashContext() async {
+    final ctx = <String, dynamic>{};
+    try {
+      final pkg = await PackageInfo.fromPlatform();
+      ctx['app_version'] = pkg.version;
+      ctx['build_number'] = pkg.buildNumber;
+      ctx['app_name'] = pkg.appName;
+    } catch (_) {}
+    try {
+      final info = DeviceInfoPlugin();
+      if (Platform.isIOS) {
+        final ios = await info.iosInfo;
+        ctx['platform'] = 'ios';
+        ctx['runtime'] = 'dart';
+        ctx['os_version'] = ios.systemVersion;
+        ctx['device_model'] = ios.utsname.machine;
+        ctx['device_name'] = ios.name;
+        ctx['locale'] = Platform.localeName;
+      } else if (Platform.isAndroid) {
+        final android = await info.androidInfo;
+        ctx['platform'] = 'android';
+        ctx['runtime'] = 'dart/kotlin';
+        ctx['os_version'] = android.version.release;
+        ctx['device_model'] = '${android.manufacturer} ${android.model}';
+        ctx['device_name'] = android.device;
+        ctx['locale'] = Platform.localeName;
+      }
+    } catch (_) {}
+    if (_currentScreen != null) ctx['current_screen'] = _currentScreen;
+    return ctx;
+  }
+
+  String? _currentScreen;
+
+  /// Call this from RouteStackObserver or your navigation layer to keep
+  /// track of the current screen for crash context.
+  void setCurrentScreen(String screen) => _currentScreen = screen;
 
   static String _hashStack(String stack) {
     final lines = stack.split('\n').where((l) => l.trim().isNotEmpty).take(3).join('|');
